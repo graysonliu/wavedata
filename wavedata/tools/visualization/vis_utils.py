@@ -1,6 +1,7 @@
 import cv2
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
+import matplotlib.gridspec as gridspec
 import numpy as np
 from PIL import Image
 
@@ -8,7 +9,7 @@ from wavedata.tools.obj_detection import obj_utils
 
 
 def visualization(image_dir, index, flipped=False, display=True,
-                  fig_size=(15, 9.15)):
+                  fig_size=(5, 2), velodyne_data=np.array([])):
     """Forms the plot figure and axis for the visualization
 
     Keyword arguments:
@@ -24,9 +25,13 @@ def visualization(image_dir, index, flipped=False, display=True,
         axes.set_xlim(0, image.shape[1])
         axes.set_ylim(image.shape[0], 0)
 
+    img_width = 1242
+    dpi = 375
     # Create the figure
-    fig, (ax1, ax2) = plt.subplots(2, 1, figsize=fig_size, sharex=True)
-    fig.subplots_adjust(left=0.0, bottom=0.0, right=1.0, top=1.0, hspace=0.0)
+    fig = plt.figure(figsize=fig_size, dpi=dpi)
+    ax1 = fig.add_axes([0.0, 0.5, img_width / (fig_size[0] * dpi), 0.5])
+    ax2 = fig.add_axes([0.0, 0.0, img_width / (fig_size[0] * dpi), 0.5])
+    ax3 = fig.add_axes([1.0 - 550 / (fig_size[0] * dpi), 10 / (fig_size[1] * dpi), 500 / (fig_size[0] * dpi), 1.0])
 
     if not flipped:
         # Grab image data
@@ -51,10 +56,26 @@ def visualization(image_dir, index, flipped=False, display=True,
     set_plot_limits(ax1, img)
     set_plot_limits(ax2, img)
 
+    ax1.axis('off')
+    ax2.axis('off')
+
+    ax3.set_xlim(-25, 25)
+    ax3.set_ylim(-20, 50)
+    ax3.set_aspect('equal')
+    ax3.tick_params(labelsize=4, width=0.3, length=1.0, pad=1.0)
+    [i.set_linewidth(0.3) for i in ax3.spines.values()]
+    velo_range = range(0, velodyne_data.shape[0], 5)
+    ax3.scatter(velodyne_data[velo_range, 1],
+                velodyne_data[velo_range, 0],
+                # velodyne_data[velo_range, 2],
+                c=velodyne_data[velo_range, 3],
+                s=0.1,
+                cmap='rainbow')
+
     if display:
         plt.show(block=False)
 
-    return fig, ax1, ax2
+    return fig, ax1, ax2, ax3
 
 
 def visualize_single_plot(image_dir, img_idx, flipped=False,
@@ -204,9 +225,9 @@ def draw_box_3d(ax, obj, p, show_orientation=True,
 
     if len(corners) > 0:
         for i in range(4):
-            x = np.append(corners[0, face_idx[i, ]],
+            x = np.append(corners[0, face_idx[i,]],
                           corners[0, face_idx[i, 0]])
-            y = np.append(corners[1, face_idx[i, ]],
+            y = np.append(corners[1, face_idx[i,]],
                           corners[1, face_idx[i, 0]])
 
             # Draw the boxes
@@ -226,8 +247,8 @@ def draw_box_3d(ax, obj, p, show_orientation=True,
         orientation = obj_utils.compute_orientation_3d(obj, p)
 
         if orientation is not None:
-            x = np.append(orientation[0, ], orientation[0, ])
-            y = np.append(orientation[1, ], orientation[1, ])
+            x = np.append(orientation[0,], orientation[0,])
+            y = np.append(orientation[1,], orientation[1,])
 
             # draw the boxes
             ax.plot(x, y, linewidth=4, color='w')
