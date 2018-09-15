@@ -1,7 +1,6 @@
 import cv2
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
-import matplotlib.gridspec as gridspec
 import numpy as np
 from PIL import Image
 
@@ -9,7 +8,7 @@ from wavedata.tools.obj_detection import obj_utils
 
 
 def visualization(image_dir, index, flipped=False, display=True,
-                  fig_size=(5, 2), velodyne_data=np.array([])):
+                  fig_size=(5, 2), velodyne_data=np.array([]), calib=None):
     """Forms the plot figure and axis for the visualization
 
     Keyword arguments:
@@ -59,17 +58,35 @@ def visualization(image_dir, index, flipped=False, display=True,
     ax1.axis('off')
     ax2.axis('off')
 
+    # draw point clouds
+    velo_range = range(0, velodyne_data.shape[0], 1)  # choose a proper step
+    reflectance = velodyne_data[velo_range, 3]
+    velodyne_data = velodyne_data[velo_range, :]
+    velodyne_data[:, 3] = 1
+    velodyne_data = velodyne_data.transpose()
+
+    P_rect_20 = calib.p2
+    R_rect_00 = np.eye(4)
+    R_rect_00[0:3, 0:3] = np.reshape(calib.r0_rect, (3, 3))
+    T2 = np.eye(4)
+    T2[0, 3] = P_rect_20[0, 3] / P_rect_20[0, 0]
+    t_cam2_velo = T2.dot(R_rect_00.dot(np.vstack((calib.tr_velodyne_to_cam, np.array([0, 0, 0, 1])))))
+
+    velodyne_data = t_cam2_velo.dot(velodyne_data)
+
     ax3.set_xlim(-25, 25)
     ax3.set_ylim(-20, 50)
     ax3.set_aspect('equal')
     ax3.tick_params(labelsize=4, width=0.3, length=1.0, pad=1.0)
     [i.set_linewidth(0.3) for i in ax3.spines.values()]
-    velo_range = range(0, velodyne_data.shape[0], 5)
-    ax3.scatter(velodyne_data[velo_range, 1],
-                velodyne_data[velo_range, 0],
+
+    ax3.scatter(velodyne_data[0, :],
+                velodyne_data[2, :],
                 # velodyne_data[velo_range, 2],
-                c=velodyne_data[velo_range, 3],
-                s=0.1,
+                c=reflectance,
+                s=0.2,
+                marker='o',
+                edgecolors='none',
                 cmap='rainbow')
 
     if display:
