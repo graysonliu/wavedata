@@ -8,7 +8,7 @@ from wavedata.tools.obj_detection import obj_utils
 
 
 def visualization(image_dir, index, flipped=False, display=True,
-                  fig_size=(5, 2), velodyne_data=np.array([]), calib=None):
+                  fig_size=(5, 2), velodyne_data=None, calib=None):
     """Forms the plot figure and axis for the visualization
 
     Keyword arguments:
